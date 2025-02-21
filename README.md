@@ -119,3 +119,9 @@ To run the tests, use:
 ### API Documentation
 
 API documentation is available in the `swagger.json` file. You can also use Swagger UI to visualize and interact with the API.
+
+Open your browser and go to:
+
+`http://localhost:3000/api-docs`
+
+This will display your interactive Swagger documentation where you can test API endpoints.
