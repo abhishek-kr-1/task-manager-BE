@@ -63,6 +63,27 @@ This is a Task Management API built with Node.js and MongoDB. It allows users to
    RATE_LIMIT_MAX_REQUESTS=100
    ```
 
+
+4. Install MongoDB Locally
+    ```
+    # Mac (Using Homebrew)
+
+    brew tap mongodb/brew
+    brew install mongodb-community@6.0
+
+    # Start MongoDB
+    brew services start mongodb-community@6.0
+
+    # Create a Database for the Project
+    # Open the MongoDB shell
+
+    mongosh
+
+    #Then, create a database
+
+    use taskDB
+    ```
+
 ### Running the Application
 
 To start the server, run:
