@@ -49,10 +49,44 @@
         ],
         "responses": {
           "200": {
-            "description": "Login successful"
+            "description": "Successful login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "description": "JWT token for authentication"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Token expiration time"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "67b8685c3335ae0440014b68"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "johndoe"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
-          "401": {
-            "description": "Unauthorized"
+          "400": {
+            "description": "Invalid credentials"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
       }
@@ -74,8 +108,8 @@
           "201": {
             "description": "Task created successfully"
           },
-          "400": {
-            "description": "Invalid input"
+          "500": {
+            "description": "Invalid input/Server error"
           }
         }
       },
@@ -230,10 +264,12 @@
           "type": "string"
         },
         "status": {
-          "type": "string"
+          "type": "string",
+          "enum": ["pending", "in-progress", "completed"]
         },
         "priority": {
-          "type": "string"
+          "type": "string",
+          "enum": ["low", "medium", "high"]
         }
       },
       "required": ["title", "description"]

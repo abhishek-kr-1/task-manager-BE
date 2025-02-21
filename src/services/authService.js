@@ -1,39 +1,71 @@
+const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const User = require("../models/userModel");
-const config = require("../config");
 const logger = require("../utils/logger");
+const config = require("../config");
 
-// Function to register a new user
-const registerUser = async (username, password) => {
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = new User({ username, password: hashedPassword });
-  return await user.save();
-};
+async function signup(username, password) {
+  try {
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return { status: 400, data: { message: "User already exists" } };
+    }
 
-// Function to authenticate user and generate JWT
-const loginUser = async (username, password) => {
-  const user = await User.findOne({ username });
-  if (!user) {
-    throw new Error("User not found");
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username, password: hashedPassword });
+    await newUser.save();
+
+    return { status: 201, data: { message: "User created successfully" } };
+  } catch (error) {
+    logger.error("Signup error:", error);
+    throw new Error("Error creating user");
   }
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    throw new Error("Invalid credentials");
-  }
-  const token = jwt.sign({ id: user._id }, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn,
-  });
-  return { token, user };
-};
+}
 
-// Function to verify JWT
-const verifyToken = (token) => {
-  return jwt.verify(token, config.jwtSecret);
-};
+async function login(username, password) {
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return {
+        status: 400,
+        data: { success: false, message: "Invalid credentials" },
+      };
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return {
+        status: 400,
+        data: { success: false, message: "Invalid credentials" },
+      };
+    }
+
+    const token = jwt.sign({ id: user._id }, config.jwtSecret, {
+      expiresIn: `${config.jwtExpirationDays}d`,
+    });
+
+    // Parse expiration from config
+    const expiresInMs = config.jwtExpirationDays * 24 * 60 * 60 * 1000;
+    const expiresAt = new Date(Date.now() + expiresInMs);
+
+    return {
+      status: 200,
+      data: {
+        token,
+        expiresAt,
+        user: {
+          id: user._id,
+          name: user.username,
+        },
+      },
+    };
+  } catch (error) {
+    logger.error("Login error:", error);
+    throw new Error("Error logging in");
+  }
+}
 
 module.exports = {
-  registerUser,
-  loginUser,
-  verifyToken,
+  signup,
+  login,
 };

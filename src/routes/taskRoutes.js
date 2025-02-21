@@ -16,7 +16,7 @@ router.put("/:id", authenticate, updateTask);
 router.delete("/:id", authenticate, deleteTask);
 
 // Task Assignment
-router.post("/tasks/:id/assign", authenticate, assignTask);
+router.post("/:id/assign", authenticate, assignTask);
 
 // Filtering & Pagination
 router.get("/", authenticate, getTasks);

@@ -1,31 +1,24 @@
-const User = require("../models/userModel");
+const userService = require("../services/userService");
 
 async function listUsers(req, res) {
   try {
-    const { page = 1, limit = 10 } = req.query;
-    const skip = (page - 1) * limit;
-
-    // exclude passwords
-    const users = await User.find({}, { password: 0 })
-      .skip(skip)
-      .limit(Number(limit));
-
-    const totalUsers = await User.countDocuments();
-
-    res.status(200).json({
-      message: "Users retrieved successfully",
-      users,
-      total: totalUsers,
-      page,
-      limit,
-      totalPages: Math.ceil(totalUsers / limit),
-    });
+    const result = await userService.listUsers(req.query);
+    return res.status(result.status).json(result.data);
   } catch (error) {
-    logger.error("Error fetching users:", error);
-    res.status(500).json({ message: "Error creating task", error });
+    return res.status(500).json({ message: error.message || "Server error" });
+  }
+}
+
+async function getUserById(req, res) {
+  try {
+    const result = await userService.getUserById(req.params.id);
+    return res.status(result.status).json(result.data);
+  } catch (error) {
+    return res.status(500).json({ message: error.message || "Server error" });
   }
 }
 
 module.exports = {
   listUsers,
+  getUserById,
 };
