@@ -22,8 +22,6 @@ module.exports = {
   mongoURI: process.env.DATABASE_URL,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpirationDays: parseInt(process.env.JWT_EXPIRATION_DAYS),
-  rateLimitWindowMs:
-    parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
-  rateLimitMaxRequests:
-    parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
+  rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS),
+  rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS),
 };
