@@ -53,10 +53,7 @@ async function login(username, password) {
       data: {
         token,
         expiresAt,
-        user: {
-          id: user._id,
-          name: user.username,
-        },
+        user: user.username,
       },
     };
   } catch (error) {

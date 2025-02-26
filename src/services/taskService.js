@@ -1,151 +1,98 @@
 const Task = require("../models/taskModel");
 const User = require("../models/userModel");
 const logger = require("../utils/logger");
+const mongoose = require("mongoose");
 
 async function createTask(userId, taskData) {
   try {
-    const { title, description, status, priority } = taskData;
-
-    const task = new Task({
-      title,
-      description,
-      status,
-      priority,
-      createdBy: userId,
-    });
-
-    await task.save();
-    return {
-      status: 201,
-      data: { message: "Task created successfully", task },
-    };
+    const task = await Task.create({ ...taskData, createdBy: userId });
+    return task;
   } catch (error) {
     logger.error("Error creating task:", error);
-    throw new Error("Error creating task");
+    throw createError(500, "Failed to create task");
   }
 }
 
 async function updateTask(userId, taskId, updates) {
-  try {
-    const task = await Task.findById(taskId);
-
-    if (!task) {
-      return { status: 404, data: { message: "Task not found" } };
-    }
-
-    if (task.createdBy.toString() !== userId) {
-      return {
-        status: 403,
-        data: { message: "Not authorized to update this task" },
-      };
-    }
-
-    Object.assign(task, updates);
-    await task.save();
-
-    return {
-      status: 200,
-      data: { message: "Task updated successfully", task },
-    };
-  } catch (error) {
-    logger.error("Error updating task:", error);
-    throw new Error("Error updating task");
-  }
+  const task = await Task.findOneAndUpdate(
+    { _id: taskId, createdBy: userId },
+    updates,
+    { new: true }
+  ).orFail(() => {
+    throw createError(404, "Task not found or unauthorized");
+  });
+  return task;
 }
 
 async function deleteTask(userId, taskId) {
-  try {
-    const task = await Task.findById(taskId);
+  const task = await Task.findOneAndUpdate(
+    { _id: taskId, createdBy: userId },
+    { deleted: true },
+    { new: true }
+  ).orFail(() => {
+    throw createError(404, "Task not found or unauthorized");
+  });
 
-    if (!task) {
-      return { status: 404, data: { message: "Task not found" } };
-    }
-
-    if (task.createdBy.toString() !== userId) {
-      return {
-        status: 403,
-        data: { message: "Not authorized to delete this task" },
-      };
-    }
-
-    task.deleted = true;
-    await task.save();
-
-    return {
-      status: 200,
-      data: { message: "Task deleted successfully", task },
-    };
-  } catch (error) {
-    logger.error("Error deleting task:", error);
-    throw new Error("Error deleting task");
-  }
+  return { message: "Task deleted successfully", task };
 }
 
 async function assignTask(userId, taskId, assignedUserId) {
-  try {
-    const task = await Task.findById(taskId);
-
-    if (!task) {
-      return { status: 404, data: { message: "Task not found" } };
-    }
-
-    if (task.createdBy.toString() !== userId) {
-      return {
-        status: 403,
-        data: { message: "Not authorized to assign this task" },
-      };
-    }
-
-    const user = await User.findById(assignedUserId);
-    if (!user) {
-      return { status: 404, data: { message: "User not found" } };
-    }
-
-    task.assignedTo = assignedUserId;
-    await task.save();
-
-    return {
-      status: 200,
-      data: { message: "Task assigned successfully", task },
-    };
-  } catch (error) {
-    logger.error("Error assigning task:", error);
-    throw new Error("Error assigning task");
+  const userExists = await User.exists({ username: assignedUserId });
+  if (!userExists) {
+    throw createError(404, "Assigned user not found");
   }
+
+  const task = await Task.findOneAndUpdate(
+    { _id: taskId, createdBy: userId },
+    { assignedTo: assignedUserId },
+    { new: true } // Return updated task
+  ).orFail(() => {
+    throw createError(404, "Task not found or unauthorized");
+  });
+
+  if (!task) {
+    throw createError(404, "Task not found or unauthorized to assign");
+  }
+
+  return task;
 }
 
-// TODO: Can provide filter based on userId
 async function getTasks(queryParams) {
   try {
     const page = parseInt(queryParams.page) || 1;
     const limit = parseInt(queryParams.limit) || 10;
-    const includeDeleted = queryParams.includeDeleted == "true";
-    const { status, priority } = queryParams;
     const skip = (page - 1) * limit;
+    const filters = buildFilters(queryParams);
 
-    const query = {};
-    if (!includeDeleted) query.deleted = { $ne: true };
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
-
-    const tasks = await Task.find(query).skip(skip).limit(limit);
-    const totalTasks = await Task.countDocuments(query);
+    const tasks = await Task.find(filters).skip(skip).limit(limit).lean();
+    const totalTasks = await Task.countDocuments(filters);
 
     return {
-      status: 200,
-      data: {
-        message: "Tasks retrieved successfully",
-        tasks,
-        total: totalTasks,
-        page,
-        limit,
-        totalPages: Math.ceil(totalTasks / limit),
-      },
+      tasks,
+      total: totalTasks,
+      page,
+      limit,
+      totalPages: Math.ceil(totalTasks / limit),
     };
   } catch (error) {
     logger.error("Error retrieving tasks:", error);
-    throw new Error("Error retrieving tasks");
+    throw createError(500, "Failed to retrieve tasks");
   }
+}
+
+// Helper Functions
+function buildFilters({ includeDeleted, status, priority }) {
+  const filters = {};
+  if (includeDeleted !== "true") filters.deleted = { $ne: true };
+  if (status) filters.status = status;
+  if (priority) filters.priority = priority;
+  return filters;
+}
+
+function createError(statusCode, message) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
 }
 
 module.exports = {

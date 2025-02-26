@@ -9,55 +9,66 @@ async function createTask(req, res) {
   }
 
   try {
-    const result = await taskService.createTask(req.user.id, req.body);
-    return res.status(result.status).json(result.data);
+    const task = await taskService.createTask(req.user.username, req.body);
+    return res.status(201).json({ message: "Task created successfully", task });
   } catch (error) {
-    return res.status(500).json({ message: error.message || "Server error" });
+    return handleError(res, error);
   }
 }
 
 async function updateTask(req, res) {
   try {
-    const result = await taskService.updateTask(
-      req.user.id,
+    const task = await taskService.updateTask(
+      req.user.username,
       req.params.id,
       req.body
     );
-    return res.status(result.status).json(result.data);
+    return res.status(200).json({ message: "Task updated successfully", task });
   } catch (error) {
-    return res.status(500).json({ message: error.message || "Server error" });
+    return handleError(res, error);
   }
 }
 
 async function deleteTask(req, res) {
   try {
-    const result = await taskService.deleteTask(req.user.id, req.params.id);
-    return res.status(result.status).json(result.data);
+    await taskService.deleteTask(req.user.username, req.params.id);
+    return res.status(200).json({ message: "Task deleted successfully" });
   } catch (error) {
-    return res.status(500).json({ message: error.message || "Server error" });
+    return handleError(res, error);
   }
 }
 
 async function assignTask(req, res) {
   try {
-    const result = await taskService.assignTask(
-      req.user.id,
-      req.params.id,
+    const task = await taskService.assignTask(
+      req.user.username,
+      req.params.id,  
       req.body.userId
     );
-    return res.status(result.status).json(result.data);
+    return res
+      .status(200)
+      .json({ message: "Task assigned successfully", task });
   } catch (error) {
-    return res.status(500).json({ message: error.message || "Server error" });
+    return handleError(res, error);
   }
 }
 
 async function getTasks(req, res) {
   try {
     const result = await taskService.getTasks(req.query);
-    return res.status(result.status).json(result.data);
+    return res.status(200).json(result);
   } catch (error) {
-    return res.status(500).json({ message: error.message || "Server error" });
+    return handleError(res, error);
   }
+}
+
+// Centralized error handling
+function handleError(res, error) {
+  if (error.statusCode) {
+    return res.status(error.statusCode).json({ message: error.message });
+  }
+  console.error(error);
+  return res.status(500).json({ message: "Internal Server Error" });
 }
 
 module.exports = {

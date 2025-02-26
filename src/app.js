@@ -4,16 +4,14 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const rateLimiter = require("./middlewares/rateLimiter");
 const errorHandler = require("./middlewares/errorHandler");
-const authRoutes = require("./routes/authRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-const userRoutes = require("./routes/userRoutes");
+const routes = require("./routes");
 const mongoSanitize = require("express-mongo-sanitize");
 const swaggerDocument = require("../swagger.json");
 
 const app = express();
 
 app.use(helmet()); // Adds security headers
-app.use(cors());
+app.use(cors()); // // Allows all origins for now (Define specific domains to access)
 app.use(express.json());
 app.use(rateLimiter);
 app.use(mongoSanitize()); // Prevent operator injection.
@@ -24,13 +22,12 @@ app.get("/v1/test", (req, res) => {
 });
 
 // Routes
-app.use("/v1/auth", authRoutes);
-app.use("/v1/tasks", taskRoutes);
-app.use("/v1/users", userRoutes);
+app.use("/v1", routes);
+
+// API Doc
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Error handling middleware
 app.use(errorHandler);
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 module.exports = app;

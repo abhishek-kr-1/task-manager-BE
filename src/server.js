@@ -4,10 +4,7 @@ const config = require("./config");
 const logger = require("./utils/logger");
 
 mongoose
-  .connect(config.mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(config.mongoURI, { useNewUrlParser: true })
   .then(() => logger.info("MongoDB Connected"))
   .catch((err) => logger.error("MongoDB Connection Error:", err));
 
